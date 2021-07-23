@@ -18,10 +18,13 @@ exports.handler = async function (event) {
             _response = buildResponse(200);
             break;
         case event.httpMethod === 'GET' && event.path === productPath:
-            _response = await getProductID(event.queryStringParameters.id);
+            _response = await getProductID(parseInt(event.queryStringParameters.id));
             break;
         case event.httpMethod === 'GET' && event.path === productsPath:
             _response = await getAllProducts();
+            break;
+        case event.httpMethod === 'POST' && event.path === productPath:
+            _response = await createProduct(JSON.parse(event.body));
             break;
         case event.httpMethod === 'DELETE' && event.path === productPath:
             _response = await deleteProductID(JSON.parse(event.body).id);
@@ -36,7 +39,7 @@ async function getProductID(id) {
     const _params = {
         TableName: tableName,
         Key: {
-            'id': parseInt(id)
+            'id': id
         }
     };
 
@@ -59,6 +62,25 @@ async function getAllProducts() {
     };
 
     return buildResponse(200, body);
+}
+
+async function createProduct(requestBody) {
+    const _params = {
+        TableName: tableName,
+        Item: requestBody
+    };
+
+    return await dynamoDB.put(_params).promise().then(() => {
+        const body = {
+            Operation: 'CREATE',
+            Message: 'SUCCESS',
+            Item: requestBody
+        };
+
+        return buildResponse(201, body);
+    }, (error) => {
+        console.error(error);
+    });
 }
 
 async function deleteProductID(id) {
