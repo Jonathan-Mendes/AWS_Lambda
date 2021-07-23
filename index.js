@@ -23,6 +23,9 @@ exports.handler = async function (event) {
         case event.httpMethod === 'GET' && event.path === productsPath:
             _response = await getAllProducts();
             break;
+        case event.httpMethod === 'DELETE' && event.path === productPath:
+            _response = await deleteProductID(JSON.parse(event.body).id);
+            break;
         default:
             _response = buildResponse(404, '404 Not Found');
     }
@@ -30,14 +33,14 @@ exports.handler = async function (event) {
 };
 
 async function getProductID(id) {
-    const params = {
+    const _params = {
         TableName: tableName,
         Key: {
-            'id': id
+            'id': parseInt(id)
         }
     };
 
-    return await dynamoDB.get(params).promise().then((response) => {
+    return await dynamoDB.get(_params).promise().then((response) => {
         return buildResponse(200, response.Item);
     }, (error) => {
         console.error(error);
@@ -45,27 +48,49 @@ async function getProductID(id) {
 }
 
 async function getAllProducts() {
-    const params = {
+    const _params = {
         TableName: tableName
     };
 
-    const allProducts = await searchData(params, []);
+    const _allProducts = await searchData(_params, []);
 
     const body = {
-        products: allProducts
+        products: _allProducts
     };
 
     return buildResponse(200, body);
 }
 
+async function deleteProductID(id) {
+    const _params = {
+        TableName: tableName,
+        Key: {
+            'id': id
+        },
+        ReturnValues: 'ALL_OLD'
+    };
+
+    return await dynamoDB.delete(_params).promise().then((response) => {
+        const body = {
+            Operation: 'DELETE',
+            Message: 'SUCCESS',
+            Item: response
+        };
+
+        return buildResponse(200, body);
+    }, (error) => {
+        console.error(error);
+    });
+}
+
 async function searchData(params, items) {
     try {
-        const data = await dynamoDB.scan(params).promise();
+        const _data = await dynamoDB.scan(params).promise();
 
-        items = items.concat(data.Items);
+        items = items.concat(_data.Items);
 
-        if (data.LastEvaluatedKey) {
-            params.ExclusiveStartkey = data.LastEvaluatedKey;
+        if (_data.LastEvaluatedKey) {
+            params.ExclusiveStartkey = _data.LastEvaluatedKey;
             return await searchData(params, items);
         }
 
