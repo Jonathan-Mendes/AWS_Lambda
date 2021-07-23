@@ -1,2 +1,2 @@
 # AWS Lambda With DynamoDB
-Functions Lambda for Manage API AWS
+Functions Lambda for Manage API AWS, With DynamoDB 

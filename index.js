@@ -4,12 +4,18 @@ AWS.config.update({
     region: 'us-east-1'
 });
 
+// Instance of DynamoDB
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
+
+// Table Name DynamoDB
 const tableName = 'products';
+
+// Resources Path GatwayAPI
 const healthPath = '/health';
 const productPath = '/product';
 const productsPath = '/products';
 
+// Handler API
 exports.handler = async function (event) {
     let _response;
 
@@ -36,9 +42,11 @@ exports.handler = async function (event) {
         default:
             _response = buildResponse(404, '404 Not Found');
     }
+
     return _response;
 };
 
+// Get Product By Id
 async function getProduct(id) {
     const _params = {
         TableName: tableName,
@@ -54,6 +62,7 @@ async function getProduct(id) {
     });
 }
 
+// Get All Products
 async function getAllProducts() {
     const _params = {
         TableName: tableName
@@ -68,6 +77,7 @@ async function getAllProducts() {
     return buildResponse(200, _body);
 }
 
+// Create a New Product
 async function createProduct(requestBody) {
     const _params = {
         TableName: tableName,
@@ -87,6 +97,7 @@ async function createProduct(requestBody) {
     });
 }
 
+// Update a Product By Id
 async function updateProduct(id, updateKey, updateValue) {
     const _params = {
         TableName: tableName,
@@ -113,6 +124,7 @@ async function updateProduct(id, updateKey, updateValue) {
     });
 }
 
+// Delete a Product By Id
 async function deleteProduct(id) {
     const _params = {
         TableName: tableName,
@@ -135,6 +147,7 @@ async function deleteProduct(id) {
     });
 }
 
+// Search DynamoDB
 async function searchData(params, items) {
     try {
         const _data = await dynamoDB.scan(params).promise();
@@ -152,6 +165,7 @@ async function searchData(params, items) {
     }
 }
 
+// Build Response JSON
 function buildResponse(statusCode, body) {
     return {
         statusCode,
