@@ -18,7 +18,7 @@ exports.handler = async function (event) {
             _response = buildResponse(200);
             break;
         case event.httpMethod === 'GET' && event.path === productPath:
-            _response = await getProductID(parseInt(event.queryStringParameters.id));
+            _response = await getProduct(parseInt(event.queryStringParameters.id));
             break;
         case event.httpMethod === 'GET' && event.path === productsPath:
             _response = await getAllProducts();
@@ -26,8 +26,12 @@ exports.handler = async function (event) {
         case event.httpMethod === 'POST' && event.path === productPath:
             _response = await createProduct(JSON.parse(event.body));
             break;
+        case event.httpMethod === 'PATCH' && event.path === productPath:
+            const _requestBody = JSON.parse(event.body);
+            _response = await updateProduct(_requestBody.id, _requestBody.updateKey, _requestBody.updateValue);
+            break;
         case event.httpMethod === 'DELETE' && event.path === productPath:
-            _response = await deleteProductID(JSON.parse(event.body).id);
+            _response = await deleteProduct(JSON.parse(event.body).id);
             break;
         default:
             _response = buildResponse(404, '404 Not Found');
@@ -35,7 +39,7 @@ exports.handler = async function (event) {
     return _response;
 };
 
-async function getProductID(id) {
+async function getProduct(id) {
     const _params = {
         TableName: tableName,
         Key: {
@@ -57,11 +61,11 @@ async function getAllProducts() {
 
     const _allProducts = await searchData(_params, []);
 
-    const body = {
+    const _body = {
         products: _allProducts
     };
 
-    return buildResponse(200, body);
+    return buildResponse(200, _body);
 }
 
 async function createProduct(requestBody) {
@@ -71,19 +75,45 @@ async function createProduct(requestBody) {
     };
 
     return await dynamoDB.put(_params).promise().then(() => {
-        const body = {
+        const _body = {
             Operation: 'CREATE',
             Message: 'SUCCESS',
             Item: requestBody
         };
 
-        return buildResponse(201, body);
+        return buildResponse(201, _body);
     }, (error) => {
         console.error(error);
     });
 }
 
-async function deleteProductID(id) {
+async function updateProduct(id, updateKey, updateValue) {
+    const _params = {
+        TableName: tableName,
+        Key: {
+            'id': id
+        },
+        UpdateExpression: `set ${updateKey} = :value`,
+        ExpressionAttributeValues: {
+            ':value': updateValue
+        },
+        ReturnValues: 'UPDATED_NEW'
+    };
+
+    return await dynamoDB.update(_params).promise().then((response) => {
+        const _body = {
+            Operation: 'UPDATE',
+            Message: 'SUCCESS',
+            UpdatedAttributes: response
+        };
+
+        return buildResponse(200, _body);
+    }, (error) => {
+        console.error(error);
+    });
+}
+
+async function deleteProduct(id) {
     const _params = {
         TableName: tableName,
         Key: {
@@ -93,13 +123,13 @@ async function deleteProductID(id) {
     };
 
     return await dynamoDB.delete(_params).promise().then((response) => {
-        const body = {
+        const _body = {
             Operation: 'DELETE',
             Message: 'SUCCESS',
             Item: response
         };
 
-        return buildResponse(200, body);
+        return buildResponse(200, _body);
     }, (error) => {
         console.error(error);
     });
