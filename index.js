@@ -6,31 +6,54 @@ AWS.config.update({
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const tableName = 'products';
+const healthPath = '/health';
+const productPath = '/product';
 const productsPath = '/products';
 
 exports.handler = async function (event) {
-    let response;
+    let _response;
 
     switch (true) {
+        case event.httpMethod === 'GET' && event.path === healthPath:
+            _response = buildResponse(200);
+            break;
+        case event.httpMethod === 'GET' && event.path === productPath:
+            _response = await getProductID(event.queryStringParameters.id);
+            break;
         case event.httpMethod === 'GET' && event.path === productsPath:
-            response = await getAllProducts();
+            _response = await getAllProducts();
             break;
         default:
-            response = buildResponse(404, '404 Not Found');
+            _response = buildResponse(404, '404 Not Found');
     }
-    return response;
+    return _response;
+};
+
+async function getProductID(id) {
+    const params = {
+        TableName: tableName,
+        Key: {
+            'id': id
+        }
+    };
+
+    return await dynamoDB.get(params).promise().then((response) => {
+        return buildResponse(200, response.Item);
+    }, (error) => {
+        console.error(error);
+    });
 }
 
 async function getAllProducts() {
     const params = {
         TableName: tableName
-    }
+    };
 
     const allProducts = await searchData(params, []);
 
     const body = {
         products: allProducts
-    }
+    };
 
     return buildResponse(200, body);
 }
@@ -59,5 +82,5 @@ function buildResponse(statusCode, body) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
-    }
+    };
 }
