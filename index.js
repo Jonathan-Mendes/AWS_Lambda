@@ -18,6 +18,7 @@ const productsPath = '/products';
 // Handler API
 exports.handler = async function (event) {
     let _response;
+    console.log('Iniciando Consulta...')
 
     switch (true) {
         case event.httpMethod === 'GET' && event.path === healthPath:
@@ -34,7 +35,7 @@ exports.handler = async function (event) {
             break;
         case event.httpMethod === 'PATCH' && event.path === productPath:
             const _requestBody = JSON.parse(event.body);
-            _response = await updateProduct(_requestBody.id, _requestBody.updateKey, _requestBody.updateValue);
+            _response = await updateProduct(_requestBody.id, _requestBody.updatesKeys);
             break;
         case event.httpMethod === 'DELETE' && event.path === productPath:
             _response = await deleteProduct(JSON.parse(event.body).id);
@@ -98,20 +99,26 @@ async function createProduct(requestBody) {
 }
 
 // Update a Product By Id
-async function updateProduct(id, updateKey, updateValue) {
+async function updateProduct(id, updatesKeys) {
     const _params = {
         TableName: tableName,
         Key: {
             'id': id
         },
-        UpdateExpression: `set ${updateKey} = :value`,
+        UpdateExpression: `set nome = :nome, descricao = :descricao, preco = :preco`,
         ExpressionAttributeValues: {
-            ':value': updateValue
+            ':nome': updatesKeys.nome,
+            ':descricao': updatesKeys.descricao,
+            ':preco': updatesKeys.preco
         },
         ReturnValues: 'UPDATED_NEW'
     };
 
+    console.log("Atualizando Produto...");
+
     return await dynamoDB.update(_params).promise().then((response) => {
+        console.log("UpdateItem succeeded");
+
         const _body = {
             Operation: 'UPDATE',
             Message: 'SUCCESS',
@@ -121,6 +128,13 @@ async function updateProduct(id, updateKey, updateValue) {
         return buildResponse(200, _body);
     }, (error) => {
         console.error(error);
+
+        const _body = {
+            Operation: 'UPDATE',
+            Message: 'FAILED'
+        };
+
+        return buildResponse(400, _body);
     });
 }
 
