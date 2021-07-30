@@ -22,7 +22,7 @@ exports.handler = async function (event) {
 
     switch (true) {
         case event.httpMethod === 'GET' && event.path === healthPath:
-            _response = buildResponse(200);
+            _response = buildResponse(200, 'API is ok!');
             break;
         case event.httpMethod === 'GET' && event.path === productPath:
             _response = await getProduct(event.queryStringParameters.id);
