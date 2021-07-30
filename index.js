@@ -25,7 +25,7 @@ exports.handler = async function (event) {
             _response = buildResponse(200);
             break;
         case event.httpMethod === 'GET' && event.path === productPath:
-            _response = await getProduct(parseInt(event.queryStringParameters.id));
+            _response = await getProduct(event.queryStringParameters.id);
             break;
         case event.httpMethod === 'GET' && event.path === productsPath:
             _response = await getAllProducts();
